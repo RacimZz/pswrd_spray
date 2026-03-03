@@ -7,3 +7,13 @@ data/processed/
 *.png
 *.pdf
 .DS_Store
+# Données brutes (trop lourdes pour Git)
+data/raw/
+data/public/
+data/processed/
+
+# Garder uniquement la structure des dossiers
+!data/.gitkeep
+!data/raw/.gitkeep
+!data/public/.gitkeep
+!data/processed/.gitkeep
