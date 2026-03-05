@@ -48,7 +48,7 @@ def main() -> int:
     eliminated.to_csv(out / "alerts_eliminated.csv", index=False)
     deduped.to_csv(out / "alerts_deduped.csv", index=False)
 
-    print(f"\n📊 Résultats post-filtrage:")
+    print(f"\nRésultats post-filtrage:")
     print(f"   Avant filtrage   : {len(alerts)} alertes")
     print(f"   Après filtrage   : {len(filtered)} alertes")
     print(f"   Éliminées        : {len(eliminated)} (faux positifs probables)")
