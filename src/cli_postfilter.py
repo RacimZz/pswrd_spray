@@ -55,11 +55,11 @@ def main() -> int:
     print(f"   Après dédup      : {len(deduped)} alertes uniques")
 
     if not filtered.empty and "priority" in filtered.columns:
-        print(f"\n🎯 Distribution des priorités:")
+        print(f"\nDistribution des priorités:")
         for p_level, count in filtered["priority"].value_counts().items():
             print(f"   {p_level:10s}: {count}")
 
-    print(f"\n🔴 Alertes finales (après dédup):")
+    print(f"\nAlertes finales (après dédup):")
     cols = [c for c in ["src_ip", "ts", "priority", "anomaly_score", "n_attempts",
                          "n_fail", "n_users", "fail_rate", "success_after_fail"] if c in deduped.columns]
     print(deduped[cols].to_string(index=False))
