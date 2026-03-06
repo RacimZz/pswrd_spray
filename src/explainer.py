@@ -1,4 +1,6 @@
 from __future__ import annotations
+import sys
+sys.stdout.reconfigure(encoding="utf-8")
 
 """Explicabilité des alertes avec SHAP.
 
@@ -320,7 +322,7 @@ def explain_all_alerts(
             "shap_fig_path": fig_path,
         })
 
-        print(f"  ✅ {exp['summary']}")
+        print(f"    {exp['summary']}")
 
     exp_df = pd.DataFrame(explanations, index=alerts_work.index)
     alerts_explained = pd.concat([alerts_work, exp_df], axis=1)

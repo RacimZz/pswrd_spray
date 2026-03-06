@@ -77,3 +77,23 @@ def normalize_logs(df: pd.DataFrame, colmap: ColumnMap = ColumnMap()) -> pd.Data
     df = df[["ts"] + REQUIRED_COLS[1:] + OPTIONAL_COLS]
     df = df.sort_values("ts").reset_index(drop=True)
     return df
+
+RBA_COLUMN_MAP = ColumnMap(
+    ts         = "Login Timestamp",
+    user       = "User ID",
+    src_ip     = "IP Address",
+    app        = "app",          # absent dans RBA, on injecte après
+    result     = "Login Successful",
+    user_agent = "User Agent String",
+    country    = "Country",
+)
+
+def normalize_rba(df: pd.DataFrame) -> pd.DataFrame:
+    """Injecte la colonne app manquante puis normalise avec le mapping RBA."""
+    df = df.copy()
+    df["app"] = "rba"
+    # Login Successful est booléen → convertir en string lisible par normalize_logs
+    df["Login Successful"] = df["Login Successful"].map(
+        {True: "success", False: "fail", 1: "success", 0: "fail"}
+    )
+    return normalize_logs(df, colmap=RBA_COLUMN_MAP)

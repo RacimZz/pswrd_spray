@@ -46,7 +46,7 @@ def main() -> int:
 
     out = Path(args.outdir)
     explained.to_csv(out / "alerts_explained.csv", index=False)
-    print(f"\n✅ Résultats sauvegardés dans {out}")
+    print(f"\n  Résultats sauvegardés dans {out}")
     return 0
 
 

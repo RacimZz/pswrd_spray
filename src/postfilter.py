@@ -1,4 +1,6 @@
 from __future__ import annotations
+import sys
+sys.stdout.reconfigure(encoding="utf-8")
 
 """Post-filtrage des alertes brutes (IsolationForest).
 

@@ -10,7 +10,7 @@ from .alerts import build_alerts
 from .features import compute_features_fixed_windows
 from .model import DEFAULT_FEATURE_COLS, IFModel, score_isolation_forest, train_isolation_forest
 from .reporting import save_basic_figures, write_latex_table
-from .schema import normalize_logs
+from .schema import normalize_logs, normalize_rba
 from .settings import Settings
 
 
@@ -35,8 +35,12 @@ def run_pipeline(
     out = Path(outdir)
     out.mkdir(parents=True, exist_ok=True)
 
-    raw = pd.read_csv(input_csv)
-    logs = normalize_logs(raw)
+    raw = pd.read_csv(input_csv, low_memory=True)
+    if "Login Timestamp" in raw.columns:
+        logs = normalize_rba(raw)
+    else:
+        logs = normalize_logs(raw)
+
 
     feat = compute_features_fixed_windows(
         logs,
