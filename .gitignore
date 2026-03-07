@@ -8,6 +8,7 @@ __pycache__/
 data/raw/
 data/public/
 data/processed/
+data/public/CIC/*
 
 # Garder la structure des dossiers vides
 !data/.gitkeep
