@@ -51,4 +51,4 @@ def train_and_save(scored_csv: str, label_col: str = "is_attack_ip", out_path: s
     print(f"Modele sauvegarde : {out_path}")
 
 if __name__ == "__main__":
-    train_and_save("data/processed/rba/scored.csv", label_col="is_attack_ip")
+    train_and_save("data/processed/rba/scored.csv", label_col="is_attack_window")
