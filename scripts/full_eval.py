@@ -14,8 +14,8 @@ warnings.filterwarnings("ignore")
 
 # ─── CHEMINS ──────────────────────────────────────────────────────────────────
 BASE      = Path(r"C:\Users\racim\Desktop\ENSIMAG 1A\projet_perso\pswrd_spray")
-CIC_DIR   = BASE / "data/public/CIC/MachineLearningCVE"
-RBA_CSV   = BASE / "data/public/rba/auth_logs.csv"
+CIC_DIR   = BASE / "data/public/CIC/"
+RBA_CSV   = BASE / "data/public/rba/rba_1m.csv"
 SYNTH_CSV = BASE / "data/raw/auth_logs.csv"
 OUT_DIR   = BASE / "data/results"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
