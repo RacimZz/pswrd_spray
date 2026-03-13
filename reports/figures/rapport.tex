@@ -18,21 +18,83 @@
 \usepackage{subcaption}
 \usepackage{float}
 \usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
 
-\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue}
+% ── Couleurs neutres ──────────────────────────────────────────────────────────
+\definecolor{darkgray}{RGB}{50,50,50}
+\definecolor{medgray}{RGB}{120,120,120}
+\definecolor{lightgray}{RGB}{230,230,230}
 
-% ── Infos ─────────────────────────────────────────────────────────────────────
-\title{
-    \large ENSIMAG --- Projet Personnel\\[0.8em]
-    \LARGE \textbf{Détection de Password Spraying}\\
-    \large par Analyse Comportementale et Anomaly Detection
+\hypersetup{
+    colorlinks=true,
+    linkcolor=darkgray,
+    urlcolor=darkgray,
+    citecolor=darkgray
 }
-\author{Racim Zenati}
-\date{Mars 2026}
+
+% ── Style des titres de section ───────────────────────────────────────────────
+\titleformat{\section}
+    {\large\bfseries\color{darkgray}}
+    {\thesection.}{0.6em}{}
+    [\vspace{-0.3em}\textcolor{lightgray}{\rule{\linewidth}{0.4pt}}]
+
+\titleformat{\subsection}
+    {\normalsize\bfseries\color{darkgray}}
+    {\thesubsection.}{0.5em}{}
+
+% ── En-tête / pied de page ────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.3pt}
+\fancyhead[L]{\small\textcolor{medgray}{Détection de Password Spraying}}
+\fancyhead[R]{\small\textcolor{medgray}{ENSIMAG 1A --- Mars 2026}}
+\fancyfoot[C]{\small\textcolor{medgray}{\thepage}}
 
 % ══════════════════════════════════════════════════════════════════════════════
 \begin{document}
-\maketitle
+
+% ── Page de titre custom ──────────────────────────────────────────────────────
+\begin{titlepage}
+\newgeometry{margin=3cm}
+\centering
+\vspace*{2cm}
+
+{\small\textcolor{medgray}{\textsc{ENSIMAG --- Projet Personnel --- Mars 2026}}}
+
+\vspace{1.5cm}
+\textcolor{lightgray}{\rule{0.6\linewidth}{0.5pt}}
+\vspace{1cm}
+
+{\LARGE\bfseries\color{darkgray} Détection de Password Spraying}
+
+\vspace{0.6cm}
+
+{\large\color{medgray} par Analyse Comportementale\\[0.3em] et Anomaly Detection}
+
+\vspace{1cm}
+\textcolor{lightgray}{\rule{0.6\linewidth}{0.5pt}}
+
+\vspace{2.5cm}
+
+{\normalsize\color{darkgray} \textbf{Racim Zenati}}\\[0.4em]
+{\small\color{medgray} ENSIMAG --- Grenoble INP}
+
+\vspace{3cm}
+
+\begin{minipage}{0.75\linewidth}
+\small\color{medgray}
+\textit{Ce rapport présente un système de détection d'anomalies non supervisé
+basé sur Isolation Forest, évalué sur les datasets CIC-IDS-2017 et UNSW-NB15.
+Le modèle final atteint un F1 de 0.743 et un recall de 82.8\% sur UNSW-NB15.}
+\end{minipage}
+
+\vfill
+{\small\textcolor{medgray}{Grenoble, Mars 2026}}
+\restoregeometry
+\end{titlepage}
+
+\thispagestyle{empty}
 \tableofcontents
 \newpage
 
