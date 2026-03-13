@@ -1,0 +1,40 @@
+dataset,label,recall,n
+CIC-brut,DDoS,0.6399,128027
+CIC-brut,PortScan,0.0051,158930
+CIC-brut,Bot,0.028,1966
+CIC-brut,Infiltration,0.8889,36
+CIC-brut,Web Attack � Brute Force,0.0504,1507
+CIC-brut,Web Attack � XSS,0.0353,652
+CIC-brut,Web Attack � Sql Injection,0.4762,21
+CIC-brut,FTP-Patator,0.013,7938
+CIC-brut,SSH-Patator,0.4994,5897
+CIC-brut,DoS slowloris,0.5833,5796
+CIC-brut,DoS Slowhttptest,0.9571,5499
+CIC-brut,DoS Hulk,0.6739,231073
+CIC-brut,DoS GoldenEye,0.9621,10293
+CIC-brut,Heartbleed,1.0,11
+CIC-agg,Bot,1.0,170
+CIC-agg,DDoS,1.0,236
+CIC-agg,DoS GoldenEye,1.0,300
+CIC-agg,DoS slowloris,1.0,55
+CIC-agg,DoS Hulk,1.0,423
+CIC-agg,DoS Slowhttptest,1.0,11
+CIC-agg,FTP-Patator,1.0,94
+CIC-agg,Heartbleed,1.0,2
+CIC-agg,Infiltration,1.0,31
+CIC-agg,PortScan,1.0,302
+CIC-agg,SSH-Patator,1.0,362
+CIC-agg,Web Attack � Sql Injection,1.0,5
+CIC-agg,Web Attack � XSS,1.0,24
+CIC-agg,Web Attack � Brute Force,1.0,76
+RBA,Is Attack IP,0.0,0
+Synthétique,attack,0.5444,630
+UNSW-NB15,Reconnaissance,0.6722,3496
+UNSW-NB15,Backdoor,0.9297,583
+UNSW-NB15,DoS,0.9178,4089
+UNSW-NB15,Exploits,0.8284,11132
+UNSW-NB15,Analysis,0.9394,677
+UNSW-NB15,Fuzzers,0.6839,6062
+UNSW-NB15,Worms,0.8636,44
+UNSW-NB15,Shellcode,0.5661,378
+UNSW-NB15,Generic,0.9917,18871
