@@ -91,3 +91,24 @@ df['anomaly_score'] = clf.score_samples(X_test_scaled)
 df['is_attack'] = y_test.values
 df[['is_attack', 'y_pred', 'anomaly_score']].to_csv('cicids_results.csv', index=False)
 print("\nRésultats sauvegardés dans cicids_results.csv")
+
+# Recall par type d'attaque
+df_results = pd.read_csv('cicids_results.csv')
+
+# Recharge les labels originaux
+labels_all = []
+for f in csv_files:
+    tmp = pd.read_csv(f, encoding='utf-8', low_memory=False)
+    tmp.columns = tmp.columns.str.strip()
+    labels_all.extend(tmp['Label'].tolist())
+
+df_results['Label'] = labels_all
+
+# Recall par classe
+print("\n=== RECALL PAR TYPE D'ATTAQUE ===")
+for label in df_results['Label'].unique():
+    if label == 'BENIGN':
+        continue
+    subset = df_results[df_results['Label'] == label]
+    recall = subset['y_pred'].mean()
+    print(f"  {label:40s} → recall = {recall:.2%}  ({len(subset)} échantillons)")
