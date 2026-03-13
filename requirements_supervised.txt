@@ -1,2 +1,0 @@
-xgboost>=2.0
-imbalanced-learn>=0.12

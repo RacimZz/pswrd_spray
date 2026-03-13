@@ -1,4 +1,0 @@
-New-Item -ItemType File data/.gitkeep
-New-Item -ItemType File data/raw/.gitkeep
-New-Item -ItemType File data/public/.gitkeep
-New-Item -ItemType File data/processed/.gitkeep
