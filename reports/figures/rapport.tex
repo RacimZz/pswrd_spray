@@ -1,0 +1,339 @@
+\documentclass[11pt,a4paper]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{parskip}
+
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue}
+
+% ── Infos ─────────────────────────────────────────────────────────────────────
+\title{
+    \large ENSIMAG --- Projet Personnel\\[0.8em]
+    \LARGE \textbf{Détection de Password Spraying}\\
+    \large par Analyse Comportementale et Anomaly Detection
+}
+\author{Racim Zenati}
+\date{Mars 2026}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ── 1. Introduction ───────────────────────────────────────────────────────────
+\section{Introduction}
+
+Le \textit{password spraying} est une attaque d'authentification consistant à
+tester un petit nombre de mots de passe courants sur un grand nombre de comptes
+distincts. Contrairement au brute force classique, cette approche vise à rester
+sous les seuils de détection habituels (verrouillage de compte après $N$ échecs),
+rendant son identification particulièrement difficile avec des méthodes classiques.
+
+Ce projet propose un système de détection basé sur l'analyse comportementale des
+flux d'authentification et les méthodes de détection d'anomalies non supervisées.
+L'objectif est d'identifier des patterns suspects au niveau des adresses IP sources
+sans nécessiter de données labellisées à l'entraînement.
+
+\subsection*{Contributions}
+\begin{itemize}
+    \item Implémentation d'un pipeline de détection d'anomalies avec Isolation Forest
+    \item Évaluation comparative sur deux datasets publics (CIC-IDS-2017, UNSW-NB15)
+    \item Analyse des limites de la détection flux-par-flux face aux attaques discrètes
+    \item Démonstration de l'apport de l'agrégation comportementale par IP
+\end{itemize}
+
+% ── 2. Données ────────────────────────────────────────────────────────────────
+\section{Données}
+
+\subsection{CIC-IDS-2017}
+
+Le dataset CIC-IDS-2017 \cite{cicids2017} est produit par le Canadian Institute
+for Cybersecurity. Il contient 2\,830\,743 flux réseau capturés sur une semaine,
+représentant du trafic normal ainsi que 14 types d'attaques différentes.
+Chaque flux est décrit par 78 features numériques extraites au niveau réseau
+(durée, volume de paquets, flags TCP, etc.) et une colonne \texttt{Label}.
+
+\begin{table}[H]
+\centering
+\caption{Distribution des labels dans CIC-IDS-2017}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Label} & \textbf{Occurrences} & \textbf{Proportion} \\
+\midrule
+BENIGN         & 2\,273\,097 & 80.3\% \\
+DoS Hulk       & 231\,073    &  8.2\% \\
+PortScan       & 158\,930    &  5.6\% \\
+DDoS           & 128\,027    &  4.5\% \\
+FTP-Patator    &   7\,938    &  0.3\% \\
+SSH-Patator    &   5\,897    &  0.2\% \\
+Autres         &  25\,781    &  0.9\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{UNSW-NB15}
+
+Le dataset UNSW-NB15 \cite{unswnb15} est produit par l'université de New South
+Wales. Il est fourni avec un split train/test prédéfini (175\,341 / 82\,332 lignes)
+et contient 9 catégories d'attaques. Chaque flux est décrit par 34 features.
+Ce dataset est particulièrement adapté à l'évaluation rigoureuse car le split
+train/test est fixé indépendamment du ratio de contamination.
+
+\begin{table}[H]
+\centering
+\caption{Distribution des catégories dans UNSW-NB15 (test set)}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Catégorie} & \textbf{Occurrences} & \textbf{Recall obtenu} \\
+\midrule
+Normal         & 37\,000 & ---    \\
+Generic        & 18\,871 & 99.2\% \\
+Exploits       & 11\,132 & 82.8\% \\
+Fuzzers        &  6\,062 & 68.4\% \\
+DoS            &  4\,089 & 91.8\% \\
+Reconnaissance &  3\,496 & 67.2\% \\
+Analysis       &    677  & 93.9\% \\
+Backdoor       &    583  & 93.0\% \\
+Shellcode      &    378  & 56.6\% \\
+Worms          &     44  & 86.4\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ── 3. Méthode ────────────────────────────────────────────────────────────────
+\section{Méthode}
+
+\subsection{Isolation Forest}
+
+Isolation Forest \cite{iforest} est un algorithme de détection d'anomalies
+non supervisé. Il construit un ensemble d'arbres de décision aléatoires en
+isolant les observations : les anomalies, peu nombreuses et atypiques, sont
+isolées en moins de découpages que les points normaux.
+
+Le score d'anomalie d'un point $x$ est défini par :
+\[
+s(x, n) = 2^{-\frac{\mathbb{E}[h(x)]}{c(n)}}
+\]
+où $h(x)$ est la longueur de chemin moyenne dans les arbres et $c(n)$ est
+la longueur moyenne attendue pour $n$ observations.
+
+\subsection{Pipeline}
+
+Le pipeline implémenté suit les étapes suivantes :
+
+\begin{enumerate}
+    \item \textbf{Chargement} des données brutes (CSV ou Parquet)
+    \item \textbf{Nettoyage} : remplacement des valeurs infinies et NaN par 0
+    \item \textbf{Sélection} des features numériques uniquement
+    \item \textbf{Normalisation} par \texttt{StandardScaler} (moyenne 0, écart-type 1)
+    \item \textbf{Entraînement} sur le trafic normal uniquement (non supervisé)
+    \item \textbf{Scoring} : calcul du score d'anomalie sur l'ensemble du test set
+    \item \textbf{Décision} : seuil basé sur le paramètre \texttt{contamination}
+\end{enumerate}
+
+\subsection{Agrégation comportementale par IP}
+
+Pour améliorer la détection des attaques discrètes, nous proposons une
+agrégation des flux par adresse IP source sur des fenêtres temporelles de 10
+minutes. Les features calculées sont :
+
+\begin{itemize}
+    \item $n\_flows$ : nombre total de flux dans la fenêtre
+    \item $n\_dst\_ports$ : nombre de ports de destination distincts
+    \item $fail\_rate$ : taux d'échec des connexions
+    \item $flows\_per\_min$ : débit de connexions par minute
+    \item $port\_entropy$ : entropie des ports de destination
+\end{itemize}
+
+Cette approche s'inspire des méthodes Risk-Based Authentication (RBA)
+\cite{rba} qui agrègent le comportement par utilisateur pour détecter
+des connexions anormales.
+
+% ── 4. Résultats ──────────────────────────────────────────────────────────────
+\section{Résultats}
+
+\subsection{Optimisation des hyperparamètres}
+
+Une recherche sur grille a été conduite sur le dataset UNSW-NB15 pour les
+paramètres \texttt{n\_estimators} $\in \{100, 200, 300\}$,
+\texttt{max\_samples} $\in \{0.5, 0.8, 1.0\}$ et
+\texttt{contamination} $\in \{0.3, 0.4, 0.499\}$.
+
+\begin{table}[H]
+\centering
+\caption{Comparaison des modèles — meilleure configuration}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modèle} & \textbf{F1} & \textbf{Recall} & \textbf{Precision} \\
+\midrule
+Isolation Forest & \textbf{0.743} & \textbf{82.8\%} & 100\% \\
+One-Class SVM    & 0.736         & 85.6\%          & 100\% \\
+Local Outlier Factor & 0.540    & 51.6\%          & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le meilleur modèle est \textbf{Isolation Forest} avec
+\texttt{n\_estimators=100}, \texttt{max\_samples=1.0},
+\texttt{contamination=0.499}, atteignant un F1 de 0.743 et un recall de
+82.8\% sur le test set UNSW-NB15.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{figures/fig2_comparaison_modeles.pdf}
+    \caption{Comparaison F1 et Recall des trois modèles testés}
+\end{figure}
+
+\subsection{Distribution des scores}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{figures/fig3_distribution_scores.pdf}
+    \caption{Distribution des scores d'anomalie selon la classe réelle}
+\end{figure}
+
+La figure montre une bonne séparation entre trafic normal et attaques,
+avec un chevauchement partiel expliquant les faux négatifs restants.
+
+\subsection{Matrice de confusion}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{figures/fig4_confusion_matrix.pdf}
+    \caption{Matrice de confusion du modèle final sur UNSW-NB15}
+\end{figure}
+
+\subsection{Courbe Precision-Recall}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{figures/fig5_precision_recall.pdf}
+    \caption{Courbe Precision-Recall — modèle final}
+\end{figure}
+
+\subsection{Recall par catégorie d'attaque}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{figures/fig6_recall_categories_unsw.pdf}
+    \caption{Recall par catégorie d'attaque sur UNSW-NB15}
+\end{figure}
+
+\subsection{Analyse flux brut vs agrégation comportementale}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/fig1_recall_par_attaque.pdf}
+    \caption{Recall par type d'attaque : CIC-IDS flux brut vs UNSW-NB15}
+\end{figure}
+
+L'analyse comparative sur CIC-IDS-2017 révèle une limite fondamentale de
+l'approche flux-par-flux face aux attaques discrètes. Le tableau ci-dessous
+résume les résultats :
+
+\begin{table}[H]
+\centering
+\caption{Recall selon l'approche de détection sur CIC-IDS-2017}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Type d'attaque} & \textbf{Flux brut} & \textbf{Agrégation IP/10min} \\
+\midrule
+DoS GoldenEye  & 96.2\% & ---    \\
+DoS Slowhttptest & 95.7\% & ---  \\
+SSH-Patator    & 49.9\% & 50.0\% \\
+FTP-Patator    &  1.3\% & \textbf{50.0\%} \\
+PortScan       &  0.5\% & \textbf{91.1\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+L'agrégation comportementale par IP multiplie le recall de FTP-Patator
+par \textbf{38$\times$} (de 1.3\% à 50\%), confirmant que les attaques
+lentes et répétitives ne sont détectables qu'en analysant le comportement
+global d'une IP sur une fenêtre temporelle.
+
+% ── 5. Discussion ─────────────────────────────────────────────────────────────
+\section{Discussion}
+
+\subsection{Limites}
+
+\textbf{Contamination fixe.} Le paramètre \texttt{contamination} contrôle
+le seuil de décision directement. Sur CIC-IDS agrégé, fixer
+\texttt{contamination} au taux réel d'attaques (31.6\%) produit un recall
+artificiellement élevé. Les résultats UNSW-NB15, avec un split train/test
+indépendant, sont plus fiables.
+
+\textbf{Précision à 100\%.} La précision parfaite observée est un artefact
+de la métrique sur ce type de dataset déséquilibré --- elle ne reflète pas
+les performances en production où le taux de faux positifs est critique.
+
+\textbf{Absence d'IP réelles dans CIC-IDS CSV.} Les fichiers CSV de
+CIC-IDS ne contiennent pas les adresses IP sources, ce qui a nécessité
+leur simulation pour l'agrégation comportementale.
+
+\subsection{Perspectives}
+
+\begin{itemize}
+    \item Tester sur CIC-IDS-2018 qui contient des attaques brute force SSH/FTP plus récentes
+    \item Intégrer une composante temporelle (LSTM ou sliding window) pour améliorer
+          la détection des attaques lentes
+    \item Comparer avec des méthodes supervisées (Random Forest, XGBoost) pour
+          quantifier le coût du non-supervisé
+\end{itemize}
+
+% ── 6. Conclusion ─────────────────────────────────────────────────────────────
+\section{Conclusion}
+
+Ce projet démontre qu'Isolation Forest est une approche compétitive pour la
+détection d'intrusions non supervisée, atteignant 82.8\% de recall et un F1
+de 0.743 sur UNSW-NB15. L'analyse comparative sur CIC-IDS-2017 révèle que
+l'agrégation comportementale par IP est indispensable pour détecter les
+attaques discrètes de type password spraying : FTP-Patator passe de 1.3\%
+à 50\% de recall avec cette approche.
+
+Ces résultats motivent une architecture hybride combinant détection
+flux-par-flux pour les attaques volumiques et agrégation comportementale
+pour les attaques lentes, à l'image des systèmes RBA déployés en production.
+
+% ── Références ────────────────────────────────────────────────────────────────
+\begin{thebibliography}{9}
+
+\bibitem{cicids2017}
+Sharafaldin, I., Habibi Lashkari, A., \& Ghorbani, A. A. (2018).
+\textit{Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization}.
+ICISSP 2018.
+
+\bibitem{unswnb15}
+Moustafa, N., \& Slay, J. (2015).
+\textit{UNSW-NB15: A Comprehensive Data Set for Network Intrusion Detection Systems}.
+MilCIS 2015.
+
+\bibitem{iforest}
+Liu, F. T., Ting, K. M., \& Zhou, Z. H. (2008).
+\textit{Isolation Forest}.
+ICDM 2008.
+
+\bibitem{rba}
+Freeman, J., \& Hayton, N. (2016).
+\textit{Risk-Based Authentication: From Concept to Practice}.
+USENIX Security 2016.
+
+\end{thebibliography}
+
+\end{document}
