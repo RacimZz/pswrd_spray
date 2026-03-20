@@ -1,5 +1,6 @@
 # Environnement Python
 .venv/
+.vscode
 __pycache__/
 *.pyc
 *.pyo
