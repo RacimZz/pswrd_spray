@@ -1,42 +1,61 @@
-# Password Spray Detector (IA + SOC)
+# Détection de Password Spraying
 
-Projet: détection d'anomalies d'authentification (password spraying / brute force / outage) à partir de logs, avec extraction de features, modèle IsolationForest, génération d'alertes, et une app de visualisation.
+![Python](https://img.shields.io/badge/Python-3.x-blue)
+![Machine Learning](https://img.shields.io/badge/Machine%20Learning-Isolation%20Forest-orange)
+![Cybersecurity](https://img.shields.io/badge/Domain-Cybersecurity-red)
+![Status](https://img.shields.io/badge/Status-Completed-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
-## Démarrage rapide
+Ce projet explore la détection d’attaques de password spraying à l’aide d’une approche de machine learning comportementale.
 
-```bash
-python -m venv .venv
-# Linux/Mac
-source .venv/bin/activate
-# Windows PowerShell
-# .\.venv\Scripts\Activate.ps1
+Le travail se concentre sur la détection d’anomalies avec **Isolation Forest** et sur des expériences menées sur des jeux de données publics tels que **CIC-IDS-2017** et **UNSW-NB15**. L’idée principale est de comparer une détection basée sur les flux avec une agrégation comportementale sur des fenêtres temporelles afin de mieux capturer des schémas d’attaque lents et répétitifs.
 
-pip install -r requirements.txt
+## Aperçu
 
-# 1) Générer un dataset synthétique avancé
-python -m src.cli synth --out data/raw/auth_logs.csv --minutes 720
+Les attaques de password spraying sont souvent difficiles à détecter lorsque chaque événement est analysé indépendamment.  
+Ce projet étudie si l’agrégation de l’activité dans le temps permet d’obtenir un signal plus efficace pour identifier les comportements suspects.
 
-# 2) Extraire features + entraîner + scorer + exporter
-python -m src.cli run --in data/raw/auth_logs.csv --outdir data/processed --window 10min
+## Fonctionnalités principales
 
-# 3) Voir les top alertes
-python -m src.cli top --alerts data/processed/alerts.csv --n 20
+- Extraction de caractéristiques comportementales à partir d’événements d’authentification ou réseau.
+- Détection d’anomalies avec Isolation Forest.
+- Expériences sur des jeux de données publics en cybersécurité.
+- Comparaison entre une analyse en flux brut et une agrégation temporelle.
+- Rapport inclus avec la méthodologie et les résultats.
 
-# (Optionnel) dashboard
-pip install -r requirements-app.txt
-streamlit run src/dashboard_streamlit.py
+## Jeux de données
+
+Le projet utilise ou adapte des expériences sur les jeux de données publics suivants :
+
+- CIC-IDS-2017
+- UNSW-NB15
+- LANL RBA (travail d’adaptation)
+
+## Structure du dépôt
+
+```text
+.
+├── data/
+├── reports/
+├── scripts/
+└── README.md
 ```
 
-## Format attendu des logs (CSV)
-Colonnes minimales:
-- ts (timestamp ISO)
-- user
-- src_ip
-- app
-- result  (success/fail)
+## Résultats
 
-Colonnes optionnelles:
-- reason, user_agent, country
+Les expériences montrent qu’une approche fondée sur l’agrégation comportementale peut améliorer significativement la détection de certaines attaques discrètes ou répétitives par rapport à une analyse en flux brut.
 
-## Datasets publics
-Le code inclut des "adapters" (stubs) pour mapper des datasets publics vers ce schéma (à compléter quand tu auras téléchargé les données).
+Une discussion détaillée de la méthodologie, des choix d’implémentation et des résultats est disponible dans le rapport joint.
+
+## Prise en main
+
+```bash
+git clone https://github.com/RacimZz/pswrd_spray.git
+cd pswrd_spray
+pip install -r requirements.txt
+```
+
+Ensuite, exécutez les scripts depuis le sous-répertoire approprié du projet selon la configuration de votre jeu de données. Pour les expériences basées sur CIC, le projet a été exécuté depuis le répertoire `scripts` avec des chemins de données configurés en conséquence.
+
+## Auteur
+Racim ZENATI - Etudiant à l'ENSIMAG
