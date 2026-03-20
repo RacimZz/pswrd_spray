@@ -232,10 +232,23 @@ des connexions anormales.
 
 \subsection{Optimisation des hyperparamètres}
 
-Une recherche sur grille a été conduite sur le dataset UNSW-NB15 pour les
-paramètres \texttt{n\_estimators} $\in \{100, 200, 300\}$,
+Une recherche sur grille a été conduite sur le dataset UNSW-NB15 afin
+d'identifier la configuration la plus performante pour chaque modèle. Les
+hyperparamètres testés pour Isolation Forest étaient
+\texttt{n\_estimators} $\in \{100, 200, 300\}$,
 \texttt{max\_samples} $\in \{0.5, 0.8, 1.0\}$ et
 \texttt{contamination} $\in \{0.3, 0.4, 0.499\}$.
+
+Les performances ont été évaluées à l'aide de trois métriques
+complémentaires : la \textbf{precision}, le \textbf{recall} et le
+\textbf{F1-score}. La precision mesure la proportion d'alertes émises par
+le modèle qui correspondent réellement à des attaques ; ici, une precision
+de 100\% signifie que toutes les observations signalées comme anormales
+dans cette évaluation étaient effectivement malveillantes. Le recall mesure
+la proportion des attaques réellement présentes dans le jeu de test qui ont
+été détectées. Enfin, le F1-score est la moyenne harmonique entre precision
+et recall : il résume donc le compromis global entre capacité de détection
+et fiabilité des alertes.
 
 \begin{table}[H]
 \centering
@@ -245,22 +258,44 @@ paramètres \texttt{n\_estimators} $\in \{100, 200, 300\}$,
 \textbf{Modèle} & \textbf{F1} & \textbf{Recall} & \textbf{Precision} \\
 \midrule
 Isolation Forest & \textbf{0.743} & \textbf{82.8\%} & 100\% \\
-One-Class SVM    & 0.736         & 85.6\%          & 100\% \\
-Local Outlier Factor & 0.540    & 51.6\%          & 100\% \\
+One-Class SVM    & 0.736          & 85.6\%          & 100\% \\
+Local Outlier Factor & 0.540      & 51.6\%          & 100\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Le meilleur modèle est \textbf{Isolation Forest} avec
-\texttt{n\_estimators=100}, \texttt{max\_samples=1.0},
-\texttt{contamination=0.499}, atteignant un F1 de 0.743 et un recall de
-82.8\% sur le test set UNSW-NB15.
+Les résultats montrent qu'Isolation Forest obtient le meilleur
+\textbf{F1-score} avec une valeur de 0.743, ce qui traduit le meilleur
+équilibre global entre détection et précision parmi les modèles comparés.
+Même si One-Class SVM atteint un recall légèrement supérieur
+(85.6\% contre 82.8\%), son F1-score est un peu plus faible, ce qui
+justifie le choix d'Isolation Forest comme modèle final. Local Outlier
+Factor apparaît nettement moins performant, avec un recall limité à
+51.6\%, ce qui signifie qu'il laisse échapper près d'une attaque sur deux
+dans cette configuration.
+
+Le meilleur modèle retenu est donc \textbf{Isolation Forest} avec
+\texttt{n\_estimators=100}, \texttt{max\_samples=1.0} et
+\texttt{contamination=0.499}. Le paramètre \texttt{n\_estimators}
+correspond au nombre d'arbres aléatoires de la forêt, \texttt{max\_samples}
+à la fraction des données utilisée pour construire chaque arbre, et
+\texttt{contamination} à la proportion estimée d'anomalies dans les
+données, utilisée pour calibrer le seuil de décision. Dans cette
+configuration, le modèle atteint un F1-score de 0.743 et un recall de
+82.8\% sur le jeu de test UNSW-NB15.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.75\textwidth]{figures/fig2_comparaison_modeles.pdf}
     \caption{Comparaison F1 et Recall des trois modèles testés}
 \end{figure}
+
+La figure compare directement les performances globales des trois modèles.
+Elle met en évidence que One-Class SVM et Isolation Forest ont des niveaux
+de recall proches, mais qu'Isolation Forest conserve le meilleur compromis
+global grâce à son F1-score légèrement supérieur. Elle permet donc de
+visualiser pourquoi le choix final ne repose pas uniquement sur le recall,
+mais sur une évaluation plus équilibrée.
 
 \subsection{Distribution des scores}
 
@@ -270,8 +305,18 @@ Le meilleur modèle est \textbf{Isolation Forest} avec
     \caption{Distribution des scores d'anomalie selon la classe réelle}
 \end{figure}
 
-La figure montre une bonne séparation entre trafic normal et attaques,
-avec un chevauchement partiel expliquant les faux négatifs restants.
+Cette figure représente la distribution des scores d'anomalie produits par
+le modèle pour les observations normales et pour les attaques. L'objectif
+est de vérifier si le modèle attribue, en moyenne, des scores plus élevés
+aux comportements malveillants qu'au trafic légitime.
+
+On observe une séparation globalement satisfaisante entre les deux classes,
+ce qui indique que le modèle parvient à distinguer une large partie des
+attaques du trafic normal. Toutefois, un chevauchement partiel subsiste
+entre les distributions : ce chevauchement correspond aux cas ambigus, où
+certaines attaques ressemblent au trafic normal ou inversement. Ce sont ces
+zones de recouvrement qui expliquent principalement les faux négatifs
+restants, c'est-à-dire les attaques non détectées.
 
 \subsection{Matrice de confusion}
 
@@ -281,6 +326,20 @@ avec un chevauchement partiel expliquant les faux négatifs restants.
     \caption{Matrice de confusion du modèle final sur UNSW-NB15}
 \end{figure}
 
+La matrice de confusion fournit une lecture plus détaillée des résultats en
+distinguant quatre cas : les vrais positifs, les vrais négatifs, les faux
+positifs et les faux négatifs. Elle permet donc de comprendre non seulement
+combien d'exemples sont bien classés, mais aussi la nature des erreurs du
+modèle.
+
+Dans notre cas, la precision de 100\% suggère l'absence, ou la quasi-absence,
+de faux positifs sur cette évaluation : les alertes produites sont donc très
+fiables. En revanche, le recall inférieur à 100\% montre qu'une partie des
+attaques reste non détectée ; ces erreurs apparaissent dans la matrice sous
+la forme de faux négatifs. La matrice confirme ainsi que la limite
+principale du modèle n'est pas la génération de fausses alertes, mais la
+détection incomplète de certains comportements malveillants.
+
 \subsection{Courbe Precision-Recall}
 
 \begin{figure}[H]
@@ -288,6 +347,21 @@ avec un chevauchement partiel expliquant les faux négatifs restants.
     \includegraphics[width=0.75\textwidth]{figures/fig5_precision_recall.pdf}
     \caption{Courbe Precision-Recall — modèle final}
 \end{figure}
+
+La courbe Precision-Recall évalue le comportement du modèle lorsque l'on
+fait varier le seuil de décision appliqué au score d'anomalie. Elle montre
+comment évolue la precision lorsque l'on cherche à augmenter le recall, et
+inversement. Cette courbe est particulièrement pertinente dans le cas de la
+détection d'intrusions, où les classes sont souvent déséquilibrées.
+
+Une courbe située nettement au-dessus de la ligne de base traduit une bonne
+capacité de séparation entre trafic normal et trafic malveillant. Dans notre
+cas, cette figure permet d'analyser le compromis entre prudence et
+sensibilité : un seuil plus strict réduit le nombre d'alertes mais risque
+de manquer davantage d'attaques, tandis qu'un seuil plus permissif augmente
+le rappel au prix d'un risque plus élevé de dégradation de la precision.
+Elle complète donc utilement les métriques ponctuelles données dans le
+tableau précédent.
 
 \subsection{Recall par catégorie d'attaque}
 
@@ -297,6 +371,19 @@ avec un chevauchement partiel expliquant les faux négatifs restants.
     \caption{Recall par catégorie d'attaque sur UNSW-NB15}
 \end{figure}
 
+Cette figure détaille le recall non plus globalement, mais séparément pour
+chaque famille d'attaque présente dans UNSW-NB15. Elle est importante car
+un bon recall moyen peut masquer de fortes disparités entre catégories :
+certaines attaques peuvent être très bien détectées, tandis que d'autres
+restent difficiles à identifier.
+
+L'intérêt principal de cette visualisation est donc d'identifier les types
+d'attaques les mieux capturés par l'approche comportementale et ceux pour
+lesquels le modèle montre encore des limites. Une telle analyse est
+essentielle dans un contexte de cybersécurité, car l'utilité pratique d'un
+détecteur dépend non seulement de sa performance moyenne, mais aussi de sa
+capacité à couvrir des scénarios d'attaque variés.
+
 \subsection{Analyse flux brut vs agrégation comportementale}
 
 \begin{figure}[H]
@@ -304,6 +391,13 @@ avec un chevauchement partiel expliquant les faux négatifs restants.
     \includegraphics[width=0.85\textwidth]{figures/fig1_recall_par_attaque.pdf}
     \caption{Recall par type d'attaque : CIC-IDS flux brut vs UNSW-NB15}
 \end{figure}
+
+Cette analyse compare deux approches de détection : une approche fondée sur
+les caractéristiques de chaque flux pris isolément, et une approche
+d'agrégation comportementale où les événements sont regroupés par IP sur une
+fenêtre temporelle de 10 minutes. L'objectif est d'évaluer si l'observation
+du comportement global d'une source permet de mieux détecter les attaques
+lentes, répétitives ou distribuées dans le temps.
 
 L'analyse comparative sur CIC-IDS-2017 révèle une limite fondamentale de
 l'approche flux-par-flux face aux attaques discrètes. Le tableau ci-dessous
@@ -316,19 +410,32 @@ résume les résultats :
 \toprule
 \textbf{Type d'attaque} & \textbf{Flux brut} & \textbf{Agrégation IP/10min} \\
 \midrule
-DoS GoldenEye  & 96.2\% & ---    \\
-DoS Slowhttptest & 95.7\% & ---  \\
-SSH-Patator    & 49.9\% & 50.0\% \\
-FTP-Patator    &  1.3\% & \textbf{50.0\%} \\
-PortScan       &  0.5\% & \textbf{91.1\%} \\
+DoS GoldenEye   & 96.2\% & --- \\
+DoS Slowhttptest & 95.7\% & --- \\
+SSH-Patator     & 49.9\% & 50.0\% \\
+FTP-Patator     & 1.3\%  & \textbf{50.0\%} \\
+PortScan        & 0.5\%  & \textbf{91.1\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-L'agrégation comportementale par IP multiplie le recall de FTP-Patator
-par \textbf{38$\times$} (de 1.3\% à 50\%), confirmant que les attaques
-lentes et répétitives ne sont détectables qu'en analysant le comportement
-global d'une IP sur une fenêtre temporelle.
+Les résultats montrent que les attaques très visibles au niveau d'un flux
+individuel, comme les attaques DoS, sont déjà bien détectées sans
+agrégation, avec des recalls supérieurs à 95\%. En revanche, pour des
+attaques plus progressives ou réparties sur plusieurs connexions, comme
+FTP-Patator et PortScan, l'analyse flux-par-flux devient insuffisante. Dans
+ces cas, l'agrégation comportementale apporte un gain majeur, car elle
+reconstruit une vue d'ensemble du comportement de l'attaquant à l'échelle
+de l'IP et du temps.
+
+L'effet est particulièrement marqué pour FTP-Patator, dont le recall passe
+de 1.3\% à 50.0\%, soit un gain d'environ \textbf{38$\times$}. Pour
+PortScan, l'amélioration est encore plus nette en valeur absolue, avec un
+passage de 0.5\% à 91.1\%. Ces résultats confirment que les attaques lentes
+et répétitives ne sont pas toujours détectables à partir d'un flux isolé,
+mais deviennent beaucoup plus visibles lorsqu'on analyse le comportement
+global d'une même IP sur une fenêtre temporelle.
+
 
 % ── 5. Discussion ─────────────────────────────────────────────────────────────
 \section{Discussion}
